@@ -64,7 +64,7 @@
       recurse: true
      become: true
      become_user: root
-   - name: Create directory
+   - name: Create Middleware Installer Directory
      ansible.builtin.file:
       path: /home/ubuntu/fusion-middleware-installer
       state: directory
@@ -146,5 +146,7 @@
       mode: '0600'
    - name: Run Oracle Fusion Middleware Installer
      ansible.builtin.command: /opt/jdk/jdk1.8.0_202/bin/java -Xmx1024m -jar /home/ubuntu/fusion-middleware-installer/fmw_12.2.1.4.0_infrastructure.jar -silent -responseFile /home/ubuntu/weblogic.rsp -invPtrLoc /home/ubuntu/oraInst.loc
+     args:
+      creates: /home/ubuntu/oracle/middleware/oraInst.loc
      environment:
       JAVA_HOME: /opt/jdk/jdk1.8.0_202
