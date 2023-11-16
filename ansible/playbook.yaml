@@ -1,0 +1,150 @@
+---
+- name: Deploy Oracle Analytics Server
+  hosts: instances
+  remote_user: root
+  tasks:
+   - name: swapoff
+     ansible.builtin.command: swapoff /swapfile
+     ignore_errors: true
+     become: true
+     become_user: root
+   - name: Create swapfile
+     community.general.filesize:
+      path: /swapfile
+      size: 1G
+      mode: '0600'
+     become: true
+     become_user: root
+   - name: mkswap
+     ansible.builtin.command: mkswap /swapfile
+     become: true
+     become_user: root
+   - name: swapon
+     ansible.builtin.command: swapon /swapfile
+     become: true
+     become_user: root
+   - name: Add swap to fstab
+     ansible.builtin.lineinfile:
+      dest: /etc/fstab
+      line: /swapfile swap swap defaults 0 0
+     become: true
+     become_user: root
+
+   - name: Install unzip
+     ansible.builtin.apt:
+      pkg: unzip
+     become: true
+     become_user: root
+
+   - name: Copy JDK8
+     ansible.builtin.copy:
+      src: ../vendor/jdk-8u202-linux-x64.tar.gz
+      dest: /home/ubuntu
+      mode: '0600'
+   - name: Create JDK directory
+     ansible.builtin.file:
+      path: /opt/jdk
+      state: directory
+      mode: '0700'
+     become: true
+     become_user: root
+   - name: Unzip JDK8
+     ansible.builtin.unarchive:
+      src: /home/ubuntu/jdk-8u202-linux-x64.tar.gz
+      dest: /opt/jdk
+      remote_src: true
+     become: true
+     become_user: root
+   - name: Set JDK8 perms
+     ansible.builtin.file:
+      dest: /opt/jdk
+      owner: root
+      group: root
+      mode: u=rwX,g=rX,o=rX
+      recurse: true
+     become: true
+     become_user: root
+   - name: Create directory
+     ansible.builtin.file:
+      path: /home/ubuntu/fusion-middleware-installer
+      state: directory
+      mode: '0700'
+   - name: Copy Oracle Fusion Middleware Infrastructure
+     ansible.builtin.copy:
+      src: ../vendor/V983368-01.zip
+      dest: /home/ubuntu/
+      mode: '0600'
+   - name: Unzip Oracle Fusion Middleware Infrastructure
+     ansible.builtin.unarchive:
+      src: /home/ubuntu/V983368-01.zip
+      dest: /home/ubuntu/fusion-middleware-installer
+      remote_src: true
+   - name: Limits (1)
+     community.general.pam_limits:
+      domain: '*'
+      limit_type: hard
+      limit_item: nofile
+      value: 999999
+     become: true
+     become_user: root
+   - name: Limits (2)
+     community.general.pam_limits:
+      domain: '*'
+      limit_type: soft
+      limit_item: nofile
+      value: 999999
+     become: true
+     become_user: root
+   - name: Limits (3)
+     community.general.pam_limits:
+      domain: '*'
+      limit_type: soft
+      limit_item: nproc
+      value: 131072
+     become: true
+     become_user: root
+   - name: Limits (4)
+     community.general.pam_limits:
+      domain: '*'
+      limit_type: hard
+      limit_item: nproc
+      value: 131072
+     become: true
+     become_user: root
+   - name: Limits (5)
+     community.general.pam_limits:
+      domain: '*'
+      limit_type: soft
+      limit_item: core
+      value: unlimited
+     become: true
+     become_user: root
+   - name: Limits (6)
+     community.general.pam_limits:
+      domain: '*'
+      limit_type: hard
+      limit_item: core
+      value: unlimited
+     become: true
+     become_user: root
+   - name: Set sysctl
+     ansible.posix.sysctl:
+      name: fs.file-max
+      value: 26815744
+      state: present
+     become: true
+     become_user: root
+   - name: Copy response file
+     ansible.builtin.copy:
+      src: response-files/weblogic.rsp
+      dest: /home/ubuntu
+      mode: '0600'
+   - name: Copy inventory file
+     ansible.builtin.copy:
+      src: response-files/oraInst.loc
+      dest: /home/ubuntu
+      mode: '0600'
+   - name: Run Oracle Fusion Middleware Installer
+     ansible.builtin.command: /opt/jdk/jdk1.8.0_202/bin/java -Xmx1024m -jar /home/ubuntu/fusion-middleware-installer/fmw_12.2.1.4.0_infrastructure.jar -silent -responseFile /home/ubuntu/weblogic.rsp -invPtrLoc /home/ubuntu/oraInst.loc
+     environment:
+      JAVA_HOME: /opt/jdk/jdk1.8.0_202
