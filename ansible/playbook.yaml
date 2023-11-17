@@ -175,3 +175,49 @@
      ansible.builtin.command: /opt/jdk/jdk1.8.0_202/bin/java -Xmx1024m -jar /home/ubuntu/oas-installer/Oracle_Analytics_Server_2023_Linux64.jar -silent -responseFile /home/ubuntu/oas.rsp -invPtrLoc /home/ubuntu/oraInst.loc -ignoreSysPreReqs
      environment:
       JAVA_HOME: /opt/jdk/jdk1.8.0_202
+
+   - name: Install mysql
+     ansible.builtin.apt:
+      pkg: mysql-server
+     become: true
+     become_user: root
+   - name: Install mysql Python
+     ansible.builtin.apt:
+      pkg: python3-pymysql
+     become: true
+     become_user: root
+   - name: Create a new MySQL database
+     community.mysql.mysql_db:
+      name: oas
+      state: present
+      login_unix_socket: /run/mysqld/mysqld.sock
+     become: true
+     become_user: root
+   - name: Create MySQL user
+     community.mysql.mysql_user:
+      name: user
+      password: password
+      priv: '*.*:ALL'
+      state: present
+      login_unix_socket: /run/mysqld/mysqld.sock
+     become: true
+     become_user: root
+   - name: Copy RCU response file
+     ansible.builtin.copy:
+      src: response-files/rcu.rsp
+      dest: /home/ubuntu
+      mode: '0600'
+   - name: Copy RCU wallet
+     ansible.builtin.copy:
+      src: response-files/rcu-wallet
+      dest: /home/ubuntu
+      mode: '0600'
+   - name: Replace a localhost entry with our own
+     ansible.builtin.lineinfile:
+      path: /home/ubuntu/oracle/middleware/oracle_common/bin/rcu
+      regexp: /bin/sh
+      line: /bin/bash
+   - name: Run RCU
+     ansible.builtin.command: /home/ubuntu/oracle/middleware/oracle_common/bin/rcu -silent -responseFile /home/ubuntu/rcu.rsp
+     environment:
+      JAVA_HOME: /opt/jdk/jdk1.8.0_202
