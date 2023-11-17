@@ -150,3 +150,28 @@
       creates: /home/ubuntu/oracle/middleware/oraInst.loc
      environment:
       JAVA_HOME: /opt/jdk/jdk1.8.0_202
+
+   - name: Create OAS Installer Directory
+     ansible.builtin.file:
+      path: /home/ubuntu/oas-installer
+      state: directory
+      mode: '0700'
+   - name: Copy Oracle Analytics
+     ansible.builtin.copy:
+      src: ../vendor/V1034351-01.zip
+      dest: /home/ubuntu/
+      mode: '0600'
+   - name: Unzip Oracle Fusion Middleware Infrastructure
+     ansible.builtin.unarchive:
+      src: /home/ubuntu/V1034351-01.zip
+      dest: /home/ubuntu/oas-installer
+      remote_src: true
+   - name: Copy response file
+     ansible.builtin.copy:
+      src: response-files/oas.rsp
+      dest: /home/ubuntu
+      mode: '0600'
+   - name: Run OAS Installer
+     ansible.builtin.command: /opt/jdk/jdk1.8.0_202/bin/java -Xmx1024m -jar /home/ubuntu/oas-installer/Oracle_Analytics_Server_2023_Linux64.jar -silent -responseFile /home/ubuntu/oas.rsp -invPtrLoc /home/ubuntu/oraInst.loc -ignoreSysPreReqs
+     environment:
+      JAVA_HOME: /opt/jdk/jdk1.8.0_202
