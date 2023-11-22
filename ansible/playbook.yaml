@@ -33,32 +33,27 @@
      become: true
      become_user: root
 
-   - name: Copy JDK8
-     ansible.builtin.copy:
-      src: ../vendor/jdk-8u202-linux-x64.tar.gz
-      dest: /home/ubuntu
+   - name: Download JDK8
+     ansible.builtin.get_url:
+      url: https://oracleanalytics-vendor-bucket.s3.amazonaws.com/jdk
+      dest: /home/ubuntu/jdk-8u202-linux-x64.tar.gz
       mode: '0600'
+      checksum: 'sha256:9a5c32411a6a06e22b69c495b7975034409fa1652d03aeb8eb5b6f59fd4594e0'
    - name: Create JDK directory
      ansible.builtin.file:
       path: /opt/jdk
       state: directory
-      mode: '0700'
+      mode: '0755'
      become: true
      become_user: root
    - name: Unzip JDK8
      ansible.builtin.unarchive:
       src: /home/ubuntu/jdk-8u202-linux-x64.tar.gz
       dest: /opt/jdk
-      remote_src: true
-     become: true
-     become_user: root
-   - name: Set JDK8 perms
-     ansible.builtin.file:
-      dest: /opt/jdk
+      mode: u=rwX,g=rX,o=rX
       owner: root
       group: root
-      mode: u=rwX,g=rX,o=rX
-      recurse: true
+      remote_src: true
      become: true
      become_user: root
    - name: Create Middleware Installer Directory
@@ -66,11 +61,12 @@
       path: /home/ubuntu/fusion-middleware-installer
       state: directory
       mode: '0700'
-   - name: Copy Oracle Fusion Middleware Infrastructure
-     ansible.builtin.copy:
-      src: ../vendor/V983368-01.zip
-      dest: /home/ubuntu/
+   - name: Download Oracle Fusion Middleware Infrastructure
+     ansible.builtin.get_url:
+      url: https://oracleanalytics-vendor-bucket.s3.amazonaws.com/fusion-middleware
+      dest: /home/ubuntu/V983368-01.zip
       mode: '0600'
+      checksum: 'sha256:5b90b388a7451de8b6c14a131339032953537dbae5a24b654a49c9a5587444d9'
    - name: Unzip Oracle Fusion Middleware Infrastructure
      ansible.builtin.unarchive:
       src: /home/ubuntu/V983368-01.zip
@@ -153,11 +149,12 @@
       path: /home/ubuntu/oas-installer
       state: directory
       mode: '0700'
-   - name: Copy Oracle Analytics
-     ansible.builtin.copy:
-      src: ../vendor/V1034351-01.zip
-      dest: /home/ubuntu/
+   - name: Download Oracle Analytics
+     ansible.builtin.get_url:
+      url: https://oracleanalytics-vendor-bucket.s3.amazonaws.com/oas
+      dest: /home/ubuntu/V1034351-01.zip
       mode: '0600'
+      checksum: 'sha256:826ef40e081c73ab9ecca816044a1c8c64e4cf44c09e3749387c14131e199ff1'
    - name: Unzip Oracle Fusion Middleware Infrastructure
      ansible.builtin.unarchive:
       src: /home/ubuntu/V1034351-01.zip
