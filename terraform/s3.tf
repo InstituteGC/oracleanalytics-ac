@@ -57,7 +57,6 @@ resource "aws_s3_object" "object-fusion-middleware" {
   source_hash = filemd5("${path.module}/../vendor/V983368-01.zip")
 
   lifecycle {
-    ignore_changes  = [source_hash]
     prevent_destroy = true
   }
 }
@@ -71,7 +70,6 @@ resource "aws_s3_object" "object-oas" {
   source_hash = filemd5("${path.module}/../vendor/V1034351-01.zip")
 
   lifecycle {
-    ignore_changes  = [source_hash]
     prevent_destroy = true
   }
 }
