@@ -3,7 +3,7 @@ data "aws_ami" "ubuntu" {
 
   filter {
     name   = "name"
-    values = ["ubuntu/images/hvm-ssd/ubuntu-jammy-22.04-amd64-server-20230516"]
+    values = ["ubuntu/images/hvm-ssd/ubuntu-focal-20.04-amd64-server-20231025"]
   }
 
   filter {
@@ -63,7 +63,7 @@ resource "aws_instance" "instance" {
   }
 
   root_block_device {
-    volume_size = 40
+    volume_size = 70
   }
 }
 
