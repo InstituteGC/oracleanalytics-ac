@@ -149,13 +149,13 @@
       path: /home/ubuntu/oas-installer
       state: directory
       mode: '0700'
-   - name: Download Oracle Analytics
+   - name: Download OAS Analytics
      ansible.builtin.get_url:
       url: https://oracleanalytics-vendor-bucket.s3.amazonaws.com/oas
       dest: /home/ubuntu/V1034351-01.zip
       mode: '0600'
       checksum: 'sha256:826ef40e081c73ab9ecca816044a1c8c64e4cf44c09e3749387c14131e199ff1'
-   - name: Unzip Oracle Fusion Middleware Infrastructure
+   - name: Unzip OAS
      ansible.builtin.unarchive:
       src: /home/ubuntu/V1034351-01.zip
       dest: /home/ubuntu/oas-installer
