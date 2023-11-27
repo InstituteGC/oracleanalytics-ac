@@ -45,7 +45,7 @@ resource "aws_security_group" "allow_ssh_and_web" {
   // Other known ports not opened:
   // * 9500 - WebLogic admin (at http://1.2.3.4:9500/console/)
 
-  // http://1.2.3.4:9502/analytics
+  // http://1.2.3.4:9502/dv
   ingress {
     description      = "Oracle Analytics"
     from_port        = 9502
