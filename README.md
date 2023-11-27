@@ -6,6 +6,8 @@ IT IS NOT PRODUCTION-READY AND SHOULD BE TREATED AS POTENTIALLY VULNERABLE.
 
 ## Deployment
 
+* Install Terraform and Ansible.
+
 * Download the following files into `vendor/`. These will probably need an Oracle SSO ID:
 
     * [Oracle JDK 8 for Linux x64, `.tar.gz` version](https://www.oracle.com/java/technologies/javase/javase8-archive-downloads.html)
