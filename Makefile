@@ -7,4 +7,4 @@ terraform:
 	(cd terraform && terraform apply)
 
 ssh:
-	ssh -i ansible/.ssh/key.pem ubuntu@$(shell cat ansible/inventory/hosts.cfg | tail -1 | cut -d' ' -f1)
+	kitty +kitten ssh -Y -i ansible/.ssh/key.pem ubuntu@$(shell cat ansible/inventory/hosts.cfg | tail -1 | cut -d' ' -f1)
