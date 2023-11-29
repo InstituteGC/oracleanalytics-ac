@@ -205,6 +205,12 @@
         ACCEPT_EULA: Y
       become: true
       become_user: root
+    - name: Enable SQL Server Agent
+      ansible.builtin.command: /opt/mssql/bin/mssql-conf set sqlagent.enabled true
+    - name: Restart SQL Server
+      ansible.builtin.systemd_service:
+        state: restarted
+        name: mssql-server
     - name: Install pip
       ansible.builtin.apt:
         name: python3-pip
