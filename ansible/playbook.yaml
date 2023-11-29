@@ -1,6 +1,8 @@
 ---
 - name: Deploy Oracle Analytics Server
   hosts: instances
+  vars:
+    base_path: /home/ubuntu
   remote_user: root
   tasks:
     - name: Create swapfile
@@ -36,7 +38,7 @@
     - name: Download JDK8
       ansible.builtin.get_url:
         url: https://oracleanalytics-vendor-bucket.s3.amazonaws.com/jdk
-        dest: /home/ubuntu/jdk-8u202-linux-x64.tar.gz
+        dest: '{{ base_path }}/jdk-8u202-linux-x64.tar.gz'
         mode: "0600"
         checksum: "sha256:9a5c32411a6a06e22b69c495b7975034409fa1652d03aeb8eb5b6f59fd4594e0"
     - name: Create JDK directory
@@ -48,7 +50,7 @@
       become_user: root
     - name: Unzip JDK8
       ansible.builtin.unarchive:
-        src: /home/ubuntu/jdk-8u202-linux-x64.tar.gz
+        src: '{{ base_path }}/jdk-8u202-linux-x64.tar.gz'
         dest: /opt/jdk
         mode: u=rwX,g=rX,o=rX
         owner: root
@@ -58,19 +60,19 @@
       become_user: root
     - name: Create Middleware Installer Directory
       ansible.builtin.file:
-        path: /home/ubuntu/fusion-middleware-installer
+        path: '{{ base_path }}/fusion-middleware-installer'
         state: directory
         mode: "0700"
     - name: Download Oracle Fusion Middleware Infrastructure
       ansible.builtin.get_url:
         url: https://oracleanalytics-vendor-bucket.s3.amazonaws.com/fusion-middleware
-        dest: /home/ubuntu/V983368-01.zip
+        dest: '{{ base_path }}/V983368-01.zip'
         mode: "0600"
         checksum: "sha256:5b90b388a7451de8b6c14a131339032953537dbae5a24b654a49c9a5587444d9"
     - name: Unzip Oracle Fusion Middleware Infrastructure
       ansible.builtin.unarchive:
-        src: /home/ubuntu/V983368-01.zip
-        dest: /home/ubuntu/fusion-middleware-installer
+        src: '{{ base_path }}/V983368-01.zip'
+        dest: '{{ base_path }}/fusion-middleware-installer'
         remote_src: true
     - name: Limits (1)
       community.general.pam_limits:
@@ -130,45 +132,45 @@
     - name: Copy response file
       ansible.builtin.copy:
         src: response-files/weblogic.rsp
-        dest: /home/ubuntu
+        dest: '{{ base_path }}'
         mode: "0600"
     - name: Copy inventory file
       ansible.builtin.copy:
         src: response-files/oraInst.loc
-        dest: /home/ubuntu
+        dest: '{{ base_path }}'
         mode: "0600"
     - name: Run Oracle Fusion Middleware Installer
-      ansible.builtin.command: /opt/jdk/jdk1.8.0_202/bin/java -Xmx1024m -jar /home/ubuntu/fusion-middleware-installer/fmw_12.2.1.4.0_infrastructure.jar -silent -responseFile /home/ubuntu/weblogic.rsp -invPtrLoc /home/ubuntu/oraInst.loc
+      ansible.builtin.command: '/opt/jdk/jdk1.8.0_202/bin/java -Xmx1024m -jar {{ base_path }}/fusion-middleware-installer/fmw_12.2.1.4.0_infrastructure.jar -silent -responseFile {{ base_path }}/weblogic.rsp -invPtrLoc {{ base_path }}/oraInst.loc'
       args:
-        creates: /home/ubuntu/oracle/middleware/oraInst.loc
+        creates: '{{ base_path }}/oracle/middleware/oraInst.loc'
       environment:
         JAVA_HOME: /opt/jdk/jdk1.8.0_202
 
     - name: Create OAS Installer Directory
       ansible.builtin.file:
-        path: /home/ubuntu/oas-installer
+        path: '{{ base_path }}/oas-installer'
         state: directory
         mode: "0700"
     - name: Download OAS Analytics
       ansible.builtin.get_url:
         url: https://oracleanalytics-vendor-bucket.s3.amazonaws.com/oas
-        dest: /home/ubuntu/V1034351-01.zip
+        dest: '{{ base_path }}/V1034351-01.zip'
         mode: "0600"
         checksum: "sha256:826ef40e081c73ab9ecca816044a1c8c64e4cf44c09e3749387c14131e199ff1"
     - name: Unzip OAS
       ansible.builtin.unarchive:
-        src: /home/ubuntu/V1034351-01.zip
-        dest: /home/ubuntu/oas-installer
+        src: '{{ base_path }}/V1034351-01.zip'
+        dest: '{{ base_path }}/oas-installer'
         remote_src: true
     - name: Copy response file
       ansible.builtin.copy:
         src: response-files/oas.rsp
-        dest: /home/ubuntu
+        dest: '{{ base_path }}'
         mode: "0600"
     - name: Run OAS Installer
-      ansible.builtin.command: /opt/jdk/jdk1.8.0_202/bin/java -Xmx1024m -jar /home/ubuntu/oas-installer/Oracle_Analytics_Server_2023_Linux64.jar -silent -responseFile /home/ubuntu/oas.rsp -invPtrLoc /home/ubuntu/oraInst.loc -ignoreSysPreReqs
+      ansible.builtin.command: '/opt/jdk/jdk1.8.0_202/bin/java -Xmx1024m -jar {{ base_path }}/oas-installer/Oracle_Analytics_Server_2023_Linux64.jar -silent -responseFile {{ base_path }}/oas.rsp -invPtrLoc {{ base_path }}/oraInst.loc -ignoreSysPreReqs'
       args:
-        creates: /home/ubuntu/oracle/middleware/inventory/Components/oracle.bi.dataload.oas/2.0.7.0.0/compDef.xml
+        creates: '{{ base_path }}/oracle/middleware/inventory/Components/oracle.bi.dataload.oas/2.0.7.0.0/compDef.xml'
       environment:
         JAVA_HOME: /opt/jdk/jdk1.8.0_202
 
@@ -252,21 +254,21 @@
 
     - name: Fix shebang bug in RCU
       ansible.builtin.lineinfile:
-        path: /home/ubuntu/oracle/middleware/oracle_common/bin/rcu
+        path: '{{ base_path }}/oracle/middleware/oracle_common/bin/rcu'
         regexp: /bin/sh
         line: "#!/bin/bash"
     - name: Copy Configuration Assistant response file
       ansible.builtin.copy:
         src: response-files/config-assistant.rsp
-        dest: /home/ubuntu
+        dest: '{{ base_path }}'
         mode: "0600"
     - name: Delete Linux distribution pre-req check
       ansible.builtin.file:
-        path: /home/ubuntu/oracle/middleware/oui/mw/bi/prereq/linux64/LinuxVendors.xml
+        path: '{{ base_path }}/oracle/middleware/oui/mw/bi/prereq/linux64/LinuxVendors.xml'
         state: absent
     - name: Run Configuration Assistant
-      ansible.builtin.command: /home/ubuntu/oracle/middleware/bi/bin/config.sh -silent -responseFile /home/ubuntu/config-assistant.rsp -ignoreSysPreReqs
+      ansible.builtin.command: '{{ base_path }}/oracle/middleware/bi/bin/config.sh -silent -responseFile {{ base_path }}/config-assistant.rsp -ignoreSysPreReqs'
       args:
-        creates: /home/ubuntu/oracle/middleware/user_projects/domains/bi/config/fmwconfig/servers/AdminServer/dms_config.xml
+        creates: '{{ base_path }}/oracle/middleware/user_projects/domains/bi/config/fmwconfig/servers/AdminServer/dms_config.xml'
       environment:
         JAVA_HOME: /opt/jdk/jdk1.8.0_202
