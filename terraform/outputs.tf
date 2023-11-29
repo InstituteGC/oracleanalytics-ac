@@ -6,3 +6,11 @@ output "private_key" {
 output "public_ip" {
   value = aws_eip.elastic_ip.public_ip
 }
+
+output "db_host" {
+  value = aws_db_instance.mydb.address
+}
+
+output "db_port" {
+  value = aws_db_instance.mydb.port
+}
