@@ -6,28 +6,9 @@
   remote_user: root
   tasks:
     - name: Create swapfile
-      community.general.filesize:
-        path: /swapfile
-        size: 1G
-        mode: "0600"
-      become: true
-      become_user: root
+      ansible.builtin.import_role:
+        name: create-swapfile
       when: ansible_swaptotal_mb < 1
-    - name: mkswap
-      ansible.builtin.command: mkswap /swapfile
-      become: true
-      become_user: root
-      when: ansible_swaptotal_mb < 1
-    - name: Add swap to fstab
-      ansible.builtin.lineinfile:
-        dest: /etc/fstab
-        line: /swapfile swap swap defaults 0 0
-      become: true
-      become_user: root
-    - name: swapon
-      ansible.builtin.command: swapon -a
-      become: true
-      become_user: root
 
     - name: Install unzip
       ansible.builtin.apt:
@@ -35,240 +16,48 @@
       become: true
       become_user: root
 
-    - name: Download JDK8
-      ansible.builtin.get_url:
-        url: https://oracleanalytics-vendor-bucket.s3.amazonaws.com/jdk
-        dest: '{{ base_path }}/jdk-8u202-linux-x64.tar.gz'
-        mode: "0600"
-        checksum: "sha256:9a5c32411a6a06e22b69c495b7975034409fa1652d03aeb8eb5b6f59fd4594e0"
-    - name: Create JDK directory
-      ansible.builtin.file:
-        path: /opt/jdk
-        state: directory
-        mode: "0755"
-      become: true
-      become_user: root
-    - name: Unzip JDK8
-      ansible.builtin.unarchive:
-        src: '{{ base_path }}/jdk-8u202-linux-x64.tar.gz'
-        dest: /opt/jdk
-        mode: u=rwX,g=rX,o=rX
-        owner: root
-        group: root
-        remote_src: true
-      become: true
-      become_user: root
-    - name: Create Middleware Installer Directory
-      ansible.builtin.file:
-        path: '{{ base_path }}/fusion-middleware-installer'
-        state: directory
-        mode: "0700"
-    - name: Download Oracle Fusion Middleware Infrastructure
-      ansible.builtin.get_url:
-        url: https://oracleanalytics-vendor-bucket.s3.amazonaws.com/fusion-middleware
-        dest: '{{ base_path }}/V983368-01.zip'
-        mode: "0600"
-        checksum: "sha256:5b90b388a7451de8b6c14a131339032953537dbae5a24b654a49c9a5587444d9"
-    - name: Unzip Oracle Fusion Middleware Infrastructure
-      ansible.builtin.unarchive:
-        src: '{{ base_path }}/V983368-01.zip'
-        dest: '{{ base_path }}/fusion-middleware-installer'
-        remote_src: true
-    - name: Limits (1)
-      community.general.pam_limits:
-        domain: "*"
-        limit_type: hard
-        limit_item: nofile
-        value: 999999
-      become: true
-      become_user: root
-    - name: Limits (2)
-      community.general.pam_limits:
-        domain: "*"
-        limit_type: soft
-        limit_item: nofile
-        value: 999999
-      become: true
-      become_user: root
-    - name: Limits (3)
-      community.general.pam_limits:
-        domain: "*"
-        limit_type: soft
-        limit_item: nproc
-        value: 131072
-      become: true
-      become_user: root
-    - name: Limits (4)
-      community.general.pam_limits:
-        domain: "*"
-        limit_type: hard
-        limit_item: nproc
-        value: 131072
-      become: true
-      become_user: root
-    - name: Limits (5)
-      community.general.pam_limits:
-        domain: "*"
-        limit_type: soft
-        limit_item: core
-        value: unlimited
-      become: true
-      become_user: root
-    - name: Limits (6)
-      community.general.pam_limits:
-        domain: "*"
-        limit_type: hard
-        limit_item: core
-        value: unlimited
-      become: true
-      become_user: root
-    - name: Set sysctl
-      ansible.posix.sysctl:
-        name: fs.file-max
-        value: 26815744
-        state: present
-      become: true
-      become_user: root
-    - name: Copy response file
-      ansible.builtin.copy:
-        src: response-files/weblogic.rsp
-        dest: '{{ base_path }}'
-        mode: "0600"
-    - name: Copy inventory file
-      ansible.builtin.copy:
-        src: response-files/oraInst.loc
-        dest: '{{ base_path }}'
-        mode: "0600"
-    - name: Run Oracle Fusion Middleware Installer
-      ansible.builtin.command: '/opt/jdk/jdk1.8.0_202/bin/java -Xmx1024m -jar {{ base_path }}/fusion-middleware-installer/fmw_12.2.1.4.0_infrastructure.jar -silent -responseFile {{ base_path }}/weblogic.rsp -invPtrLoc {{ base_path }}/oraInst.loc'
-      args:
-        creates: '{{ base_path }}/oracle/middleware/oraInst.loc'
-      environment:
-        JAVA_HOME: /opt/jdk/jdk1.8.0_202
+    - name: Check JDK
+      ansible.builtin.stat:
+        path: '/opt/jdk/jdk1.8.0_202/LICENSE'
+      register: jdk_file
+    - name: Install JDK
+      ansible.builtin.import_role:
+        name: jdk
+      when: not jdk_file.stat.exists
 
-    - name: Create OAS Installer Directory
-      ansible.builtin.file:
-        path: '{{ base_path }}/oas-installer'
-        state: directory
-        mode: "0700"
-    - name: Download OAS Analytics
-      ansible.builtin.get_url:
-        url: https://oracleanalytics-vendor-bucket.s3.amazonaws.com/oas
-        dest: '{{ base_path }}/V1034351-01.zip'
-        mode: "0600"
-        checksum: "sha256:826ef40e081c73ab9ecca816044a1c8c64e4cf44c09e3749387c14131e199ff1"
-    - name: Unzip OAS
-      ansible.builtin.unarchive:
-        src: '{{ base_path }}/V1034351-01.zip'
-        dest: '{{ base_path }}/oas-installer'
-        remote_src: true
-    - name: Copy response file
-      ansible.builtin.copy:
-        src: response-files/oas.rsp
-        dest: '{{ base_path }}'
-        mode: "0600"
-    - name: Run OAS Installer
-      ansible.builtin.command: '/opt/jdk/jdk1.8.0_202/bin/java -Xmx1024m -jar {{ base_path }}/oas-installer/Oracle_Analytics_Server_2023_Linux64.jar -silent -responseFile {{ base_path }}/oas.rsp -invPtrLoc {{ base_path }}/oraInst.loc -ignoreSysPreReqs'
-      args:
-        creates: '{{ base_path }}/oracle/middleware/inventory/Components/oracle.bi.dataload.oas/2.0.7.0.0/compDef.xml'
-      environment:
-        JAVA_HOME: /opt/jdk/jdk1.8.0_202
+    - name: Check Middleware
+      ansible.builtin.stat:
+        path: '{{ base_path }}/oracle/middleware/oraInst.loc'
+      register: middleware_file
+    - name: Install Middleware
+      ansible.builtin.import_role:
+        name: middleware
+      when: not middleware_file.stat.exists
 
-    - name: SQL Server GPG Keys
-      ansible.builtin.get_url:
-        url: https://packages.microsoft.com/keys/microsoft.asc
-        dest: /etc/apt/trusted.gpg.d/microsoft.asc
-        mode: 0644
-      become: true
-      become_user: root
-    - name: SQL Server Repo
-      ansible.builtin.apt_repository:
-        repo: deb [arch=amd64,armhf,arm64] https://packages.microsoft.com/ubuntu/20.04/mssql-server-2022 focal main
-        state: present
-      become: true
-      become_user: root
+    - name: Check OAS
+      ansible.builtin.stat:
+        path: '{{ base_path }}/oracle/middleware/inventory/Components/oracle.bi.dataload.oas/2.0.7.0.0/compDef.xml'
+      register: oas_file
+    - name: Install OAS
+      ansible.builtin.import_role:
+        name: oas-install
+      when: not oas_file.stat.exists
+
+    - name: Check SQL Server
+      ansible.builtin.stat:
+        path: "{{ base_path }}/.mssql-configured"
+      register: sql_file
     - name: Install SQL Server
-      ansible.builtin.apt:
-        pkg: mssql-server
-      become: true
-      become_user: root
-      # See https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-configure-environment-variables?view=sql-server-ver16
-    - name: Run SQL Server setup
-      ansible.builtin.shell: |
-        set -o errexit
-        /opt/mssql/bin/mssql-conf -n setup
-        touch /.mssql-configured
-      args:
-        creates: /.mssql-configured
-      changed_when: true
-      environment:
-        MSSQL_SA_PASSWORD: Password1
-        MSSQL_PID: "Developer"
-        ACCEPT_EULA: Y
-      become: true
-      become_user: root
-    - name: Enable SQL Server Agent
-      ansible.builtin.command: /opt/mssql/bin/mssql-conf set sqlagent.enabled true
-    - name: Restart SQL Server
-      ansible.builtin.systemd_service:
-        state: restarted
-        name: mssql-server
-    - name: Install pip
-      ansible.builtin.apt:
-        name: python3-pip
-      become: true
-      become_user: root
-    - name: Install pymssql python package
-      ansible.builtin.pip:
-        name: pymssql
-      become: true
-      become_user: root
-    - name: Create a new database with name 'oas'
-      community.general.mssql_db:
-        name: oas
-        login_host: localhost
-        login_user: sa
-        login_password: Password1
-    # This will hang if there are any other connections open to the DB
-    - name: Run pre-req DB setup (READ_COMMITTED_SNAPSHOT)
-      community.general.mssql_script:
-        login_user: sa
-        login_password: Password1
-        login_host: localhost
-        script: |
-          ALTER database oas SET READ_COMMITTED_SNAPSHOT ON
-    - name: Run pre-req DB setup (Collation)
-      community.general.mssql_script:
-        login_user: sa
-        login_password: Password1
-        login_host: localhost
-        script: |
-          DECLARE @collate sysname
-          SELECT @collate = convert(sysname, serverproperty('COLLATION'))
-          IF ( charindex(N'_CI', @collate) > 0 )
-          BEGIN
-            select @collate = replace(@collate, N'_CI', N'_CS')
-            exec ('ALTER database oas COLLATE ' + @collate)
-          END
-          GO
+      ansible.builtin.import_role:
+        name: sql-server
+      when: not sql_file.stat.exists
 
-    - name: Fix shebang bug in RCU
-      ansible.builtin.lineinfile:
-        path: '{{ base_path }}/oracle/middleware/oracle_common/bin/rcu'
-        regexp: /bin/sh
-        line: "#!/bin/bash"
-    - name: Copy Configuration Assistant response file
-      ansible.builtin.copy:
-        src: response-files/config-assistant.rsp
-        dest: '{{ base_path }}'
-        mode: "0600"
-    - name: Delete Linux distribution pre-req check
-      ansible.builtin.file:
-        path: '{{ base_path }}/oracle/middleware/oui/mw/bi/prereq/linux64/LinuxVendors.xml'
-        state: absent
-    - name: Run Configuration Assistant
-      ansible.builtin.command: '{{ base_path }}/oracle/middleware/bi/bin/config.sh -silent -responseFile {{ base_path }}/config-assistant.rsp -ignoreSysPreReqs'
-      args:
-        creates: '{{ base_path }}/oracle/middleware/user_projects/domains/bi/config/fmwconfig/servers/AdminServer/dms_config.xml'
-      environment:
-        JAVA_HOME: /opt/jdk/jdk1.8.0_202
+    - name: Check OAS Configuration
+      ansible.builtin.stat:
+        path: '{{ base_path }}/oracle/middleware/user_projects/domains/bi/config/fmwconfig/servers/AdminServer/dms_config.xml'
+      register: oas_config_file
+    - name: Apply OAS Configuration
+      ansible.builtin.import_role:
+        name: oas-configuration
+      when: not oas_config_file.stat.exists
+

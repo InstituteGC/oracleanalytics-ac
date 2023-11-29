@@ -1,0 +1,24 @@
+---
+- name: Download JDK8
+  ansible.builtin.get_url:
+    url: https://oracleanalytics-vendor-bucket.s3.amazonaws.com/jdk
+    dest: '{{ base_path }}/jdk-8u202-linux-x64.tar.gz'
+    mode: "0600"
+    checksum: "sha256:9a5c32411a6a06e22b69c495b7975034409fa1652d03aeb8eb5b6f59fd4594e0"
+- name: Create JDK directory
+  ansible.builtin.file:
+    path: /opt/jdk
+    state: directory
+    mode: "0755"
+  become: true
+  become_user: root
+- name: Unzip JDK8
+  ansible.builtin.unarchive:
+    src: '{{ base_path }}/jdk-8u202-linux-x64.tar.gz'
+    dest: /opt/jdk
+    mode: u=rwX,g=rX,o=rX
+    owner: root
+    group: root
+    remote_src: true
+  become: true
+  become_user: root

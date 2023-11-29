@@ -1,0 +1,28 @@
+---
+- name: Create OAS Installer Directory
+  ansible.builtin.file:
+    path: '{{ base_path }}/oas-installer'
+    state: directory
+    mode: "0700"
+- name: Download OAS Analytics
+  ansible.builtin.get_url:
+    url: https://oracleanalytics-vendor-bucket.s3.amazonaws.com/oas
+    dest: '{{ base_path }}/V1034351-01.zip'
+    mode: "0600"
+    checksum: "sha256:826ef40e081c73ab9ecca816044a1c8c64e4cf44c09e3749387c14131e199ff1"
+- name: Unzip OAS
+  ansible.builtin.unarchive:
+    src: '{{ base_path }}/V1034351-01.zip'
+    dest: '{{ base_path }}/oas-installer'
+    remote_src: true
+- name: Copy response file
+  ansible.builtin.copy:
+    src: response-files/oas.rsp
+    dest: '{{ base_path }}'
+    mode: "0600"
+- name: Run OAS Installer
+  ansible.builtin.command: '/opt/jdk/jdk1.8.0_202/bin/java -Xmx1024m -jar {{ base_path }}/oas-installer/Oracle_Analytics_Server_2023_Linux64.jar -silent -responseFile {{ base_path }}/oas.rsp -invPtrLoc {{ base_path }}/oraInst.loc -ignoreSysPreReqs'
+  args:
+    creates: '{{ base_path }}/oracle/middleware/inventory/Components/oracle.bi.dataload.oas/2.0.7.0.0/compDef.xml'
+  environment:
+    JAVA_HOME: /opt/jdk/jdk1.8.0_202

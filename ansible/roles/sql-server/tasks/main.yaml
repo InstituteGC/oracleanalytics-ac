@@ -1,0 +1,83 @@
+    - name: SQL Server GPG Keys
+      ansible.builtin.get_url:
+        url: https://packages.microsoft.com/keys/microsoft.asc
+        dest: /etc/apt/trusted.gpg.d/microsoft.asc
+        mode: 0644
+      become: true
+      become_user: root
+    - name: SQL Server Repo
+      ansible.builtin.apt_repository:
+        repo: deb [arch=amd64,armhf,arm64] https://packages.microsoft.com/ubuntu/20.04/mssql-server-2022 focal main
+        state: present
+      become: true
+      become_user: root
+    - name: Install SQL Server
+      ansible.builtin.apt:
+        pkg: mssql-server
+      become: true
+      become_user: root
+      # See https://learn.microsoft.com/en-us/sql/linux/sql-server-linux-configure-environment-variables?view=sql-server-ver16
+    - name: Run SQL Server setup
+      ansible.builtin.shell: |
+        set -o errexit
+        /opt/mssql/bin/mssql-conf -n setup
+      changed_when: true
+      environment:
+        MSSQL_SA_PASSWORD: Password1
+        MSSQL_PID: "Developer"
+        ACCEPT_EULA: Y
+      become: true
+      become_user: root
+    - name: Enable SQL Server Agent
+      ansible.builtin.command: /opt/mssql/bin/mssql-conf set sqlagent.enabled true
+      become: true
+      become_user: root
+    - name: Restart SQL Server
+      ansible.builtin.systemd_service:
+        state: restarted
+        name: mssql-server
+      become: true
+      become_user: root
+    - name: Install pip
+      ansible.builtin.apt:
+        name: python3-pip
+      become: true
+      become_user: root
+    - name: Install pymssql python package
+      ansible.builtin.pip:
+        name: pymssql
+      become: true
+      become_user: root
+    - name: Create a new database with name 'oas'
+      community.general.mssql_db:
+        name: oas
+        login_host: localhost
+        login_user: sa
+        login_password: Password1
+    # This will hang if there are any other connections open to the DB
+    - name: Run pre-req DB setup (READ_COMMITTED_SNAPSHOT)
+      community.general.mssql_script:
+        login_user: sa
+        login_password: Password1
+        login_host: localhost
+        script: |
+          ALTER database oas SET READ_COMMITTED_SNAPSHOT ON
+    - name: Run pre-req DB setup (Collation)
+      community.general.mssql_script:
+        login_user: sa
+        login_password: Password1
+        login_host: localhost
+        script: |
+          DECLARE @collate sysname
+          SELECT @collate = convert(sysname, serverproperty('COLLATION'))
+          IF ( charindex(N'_CI', @collate) > 0 )
+          BEGIN
+            select @collate = replace(@collate, N'_CI', N'_CS')
+            exec ('ALTER database oas COLLATE ' + @collate)
+          END
+          GO
+    - name: SQL Server setup finished
+      ansible.builtin.shell: |
+        touch "{{ base_path }}/.mssql-configured"
+      args:
+        creates: "{{ base_path }}/.mssql-configured"

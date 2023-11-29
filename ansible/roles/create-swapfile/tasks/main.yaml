@@ -1,0 +1,24 @@
+---
+- name: Create swapfile
+  community.general.filesize:
+    path: /swapfile
+    size: 1G
+    mode: "0600"
+  become: true
+  become_user: root
+  when: ansible_swaptotal_mb < 1
+- name: mkswap
+  ansible.builtin.command: mkswap /swapfile
+  become: true
+  become_user: root
+  when: ansible_swaptotal_mb < 1
+- name: Add swap to fstab
+  ansible.builtin.lineinfile:
+    dest: /etc/fstab
+    line: /swapfile swap swap defaults 0 0
+  become: true
+  become_user: root
+- name: swapon
+  ansible.builtin.command: swapon -a
+  become: true
+  become_user: root

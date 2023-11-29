@@ -1,0 +1,89 @@
+---
+- name: Create Middleware Installer Directory
+  ansible.builtin.file:
+    path: '{{ base_path }}/fusion-middleware-installer'
+    state: directory
+    mode: "0700"
+- name: Download Oracle Fusion Middleware Infrastructure
+  ansible.builtin.get_url:
+    url: https://oracleanalytics-vendor-bucket.s3.amazonaws.com/fusion-middleware
+    dest: '{{ base_path }}/V983368-01.zip'
+    mode: "0600"
+    checksum: "sha256:5b90b388a7451de8b6c14a131339032953537dbae5a24b654a49c9a5587444d9"
+- name: Unzip Oracle Fusion Middleware Infrastructure
+  ansible.builtin.unarchive:
+    src: '{{ base_path }}/V983368-01.zip'
+    dest: '{{ base_path }}/fusion-middleware-installer'
+    remote_src: true
+- name: Limits (1)
+  community.general.pam_limits:
+    domain: "*"
+    limit_type: hard
+    limit_item: nofile
+    value: 999999
+  become: true
+  become_user: root
+- name: Limits (2)
+  community.general.pam_limits:
+    domain: "*"
+    limit_type: soft
+    limit_item: nofile
+    value: 999999
+  become: true
+  become_user: root
+- name: Limits (3)
+  community.general.pam_limits:
+    domain: "*"
+    limit_type: soft
+    limit_item: nproc
+    value: 131072
+  become: true
+  become_user: root
+- name: Limits (4)
+  community.general.pam_limits:
+    domain: "*"
+    limit_type: hard
+    limit_item: nproc
+    value: 131072
+  become: true
+  become_user: root
+- name: Limits (5)
+  community.general.pam_limits:
+    domain: "*"
+    limit_type: soft
+    limit_item: core
+    value: unlimited
+  become: true
+  become_user: root
+- name: Limits (6)
+  community.general.pam_limits:
+    domain: "*"
+    limit_type: hard
+    limit_item: core
+    value: unlimited
+  become: true
+  become_user: root
+- name: Set sysctl
+  ansible.posix.sysctl:
+    name: fs.file-max
+    value: 26815744
+    state: present
+  become: true
+  become_user: root
+- name: Copy response file
+  ansible.builtin.copy:
+    src: response-files/weblogic.rsp
+    dest: '{{ base_path }}'
+    mode: "0600"
+- name: Copy inventory file
+  ansible.builtin.copy:
+    src: response-files/oraInst.loc
+    dest: '{{ base_path }}'
+    mode: "0600"
+- name: Run Oracle Fusion Middleware Installer
+  ansible.builtin.command: '/opt/jdk/jdk1.8.0_202/bin/java -Xmx1024m -jar {{ base_path }}/fusion-middleware-installer/fmw_12.2.1.4.0_infrastructure.jar -silent -responseFile {{ base_path }}/weblogic.rsp -invPtrLoc {{ base_path }}/oraInst.loc'
+  args:
+    creates: '{{ base_path }}/oracle/middleware/oraInst.loc'
+  environment:
+    JAVA_HOME: /opt/jdk/jdk1.8.0_202
+
