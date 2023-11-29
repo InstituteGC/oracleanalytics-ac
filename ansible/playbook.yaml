@@ -60,4 +60,3 @@
       ansible.builtin.import_role:
         name: oas-configuration
       when: not oas_config_file.stat.exists
-
