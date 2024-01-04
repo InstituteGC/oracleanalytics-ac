@@ -42,10 +42,10 @@ resource "aws_security_group" "allow_ssh_and_web" {
     ipv6_cidr_blocks = ["::/0"]
   }
 
-  // Other known ports not opened:
-  // * 9500 - WebLogic admin (at http://1.2.3.4:9500/console/)
+  # Other known ports not opened:
+  # * 9500 - WebLogic admin (at http://1.2.3.4:9500/console/)
 
-  // http://1.2.3.4:9502/dv
+  # http://1.2.3.4:9502/dv
   ingress {
     description      = "Oracle Analytics"
     from_port        = 9502
